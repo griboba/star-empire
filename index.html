@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Star Empire - Idle Clicker</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "Segoe UI", Arial, sans-serif;
+    background: radial-gradient(circle at 20% 0%, #0d1b3e, #050818 70%);
+    color: #e8ecff;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+  header {
+    background: rgba(255,255,255,0.04);
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    padding: 10px 16px;
+    display: flex; align-items: center; gap: 18px; flex-wrap: wrap;
+    position: sticky; top: 0; z-index: 50;
+    backdrop-filter: blur(6px);
+  }
+  .brand { font-size: 20px; font-weight: 700; color: #8ec5ff; letter-spacing: .5px; }
+  .hud .cookies { font-size: 26px; font-weight: 700; color: #ffe08a; }
+  .hud .sub { font-size: 13px; color: #8a9cc0; }
+  .buff-tag {
+    background: #8ec5ff22; border: 1px solid #8ec5ff; color: #a7d4ff;
+    padding: 3px 10px; border-radius: 20px; font-size: 12px; margin-left: 8px;
+  }
+  nav { margin-left: auto; display: flex; gap: 4px; flex-wrap: wrap; }
+  nav button {
+    background: transparent; color: #aab; border: 1px solid transparent;
+    padding: 8px 12px; border-radius: 8px; cursor: pointer; font-size: 14px;
+  }
+  nav button:hover { background: rgba(255,255,255,0.06); color: #fff; }
+  nav button.active { background: #8ec5ff22; border-color: #8ec5ff; color: #8ec5ff; }
+  main { max-width: 940px; margin: 0 auto; padding: 20px 16px 60px; }
+  section { display: none; }
+  section.active { display: block; }
+
+  .click-area { text-align: center; padding: 30px 0 10px; }
+  .star-btn {
+    width: 220px; height: 220px; border-radius: 50%; border: none; cursor: pointer;
+    background: radial-gradient(circle at 32% 30%, #fff7d6, #ffd25e 45%, #b8860b 80%);
+    box-shadow: 0 0 60px #ffd25e88, 0 12px 30px rgba(0,0,0,.5), inset 0 -12px 24px rgba(0,0,0,.35), inset 0 10px 22px rgba(255,255,255,.45);
+    font-size: 92px; line-height: 1;
+    transition: transform .06s;
+    user-select: none;
+    animation: twinkle 3s ease-in-out infinite;
+  }
+  @keyframes twinkle { 0%,100% { box-shadow: 0 0 60px #ffd25e88; } 50% { box-shadow: 0 0 90px #ffe08a; } }
+  .star-btn:active { transform: scale(.93); }
+
+  .click-stats { margin-top: 18px; font-size: 15px; color: #aab7d8; }
+  .click-stats b { color: #ffe08a; }
+
+  .panel {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 14px; padding: 18px; margin-top: 18px;
+  }
+  .panel h2 { font-size: 18px; margin-bottom: 12px; color: #8ec5ff; }
+  .panel p.hint { color: #77849f; font-size: 13px; margin-bottom: 12px; }
+
+  .upgrade {
+    display: flex; align-items: center; gap: 14px; padding: 12px;
+    border: 1px solid rgba(255,255,255,0.1); border-radius: 12px;
+    margin-bottom: 10px; background: rgba(255,255,255,0.02);
+  }
+  .upgrade .icon { font-size: 30px; width: 46px; text-align: center; }
+  .upgrade .info { flex: 1; }
+  .upgrade .info .name { font-weight: 600; }
+  .upgrade .info .desc { font-size: 12.5px; color: #8a99bb; }
+  .upgrade .info .owned { font-size: 12px; color: #8ec5ff; }
+  .upgrade button {
+    background: #ffd25e; color: #241c02; border: none; border-radius: 10px;
+    padding: 10px 18px; font-weight: 700; cursor: pointer; font-size: 14px;
+    min-width: 150px;
+  }
+  .upgrade button:disabled { background: #2a2a3a; color: #556; cursor: not-allowed; }
+  .upgrade .controls { display: flex; gap: 8px; align-items: center; }
+  .upgrade .controls .buy { min-width: 150px; }
+  .upgrade .controls .max {
+    background: transparent; border: 2px solid #8ec5ff; color: #8ec5ff;
+    min-width: 62px; font-size: 13px; padding: 9px 12px;
+  }
+  .upgrade .controls .max:disabled { background: transparent; border-color: #2a2a3a; color: #446; }
+
+  .rebirth-box { text-align: center; }
+  .rebirth-box .big { font-size: 15px; line-height: 1.9; }
+  .rebirth-box .gain { color: #7ed3ff; font-weight: 700; }
+  #btnRebirth {
+    margin-top: 14px; background: linear-gradient(180deg,#ff9df5,#a94df0); color:#fff;
+    border: none; padding: 14px 30px; border-radius: 12px; font-size: 16px; font-weight: 700; cursor: pointer;
+  }
+  #btnRebirth:disabled { background: #2a2a3a; color: #556; cursor: not-allowed; }
+
+  input[type=text] {
+    background: #141a33; border: 1px solid rgba(255,255,255,0.15); color: #e8ecff;
+    padding: 10px 12px; border-radius: 8px; font-size: 14px; width: 220px;
+  }
+  .btn {
+    background: #ffd25e; color: #241c02; border: none; border-radius: 8px;
+    padding: 10px 16px; font-size: 14px; font-weight: 700; cursor: pointer;
+  }
+  .btn.gray { background: #262b3d; color: #aab; }
+  .btn.red { background: #c94a4a; color: #fff; }
+
+  .daily-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; margin-top: 10px; }
+  .day {
+    border: 1px solid rgba(255,255,255,0.12); border-radius: 10px; padding: 10px 4px;
+    text-align: center; background: rgba(255,255,255,0.03); font-size: 12px;
+  }
+  .day .d { font-size: 18px; }
+  .day .v { color: #ffe08a; font-weight: 700; margin-top: 4px; }
+  .day .s { font-size: 11px; color: #77849f; min-height: 14px; }
+  .day.today { border-color: #8ec5ff; background: #8ec5ff14; }
+  .day.done { opacity: .5; }
+  #btnDaily {
+    margin-top: 14px; background: #2fd07a; color: #04281a; border: none; border-radius: 10px;
+    padding: 12px 28px; font-size: 15px; font-weight: 700; cursor: pointer;
+  }
+  #btnDaily:disabled { background: #2a2a3a; color: #556; cursor: not-allowed; }
+
+  .ach { display: flex; align-items: center; gap: 12px; padding: 10px; border-radius: 10px; margin-top: 8px; background: rgba(255,255,255,0.03); }
+  .ach .icon { font-size: 24px; filter: grayscale(1); opacity: .4; }
+  .ach.done .icon { filter: none; opacity: 1; }
+  .ach.done { background: #8ec5ff14; }
+  .ach .name { font-weight: 600; }
+  .ach .desc { font-size: 12.5px; color: #8a99bb; }
+  .ach.done .desc { color: #8ec5ff; }
+
+  .row { display: flex; justify-content: space-between; font-size: 14px; padding: 6px 0; border-bottom: 1px dashed rgba(255,255,255,0.07); }
+
+  .nova {
+    position: fixed; width: 84px; height: 84px; border-radius: 50%; border: 3px solid #fff3c4;
+    background: radial-gradient(circle at 35% 30%, #fff9e6, #ffdf5e 55%, #ff8c00);
+    box-shadow: 0 0 40px #ffd25e, 0 6px 16px rgba(0,0,0,.5);
+    font-size: 40px; display: flex; align-items: center; justify-content: center; cursor: pointer;
+    animation: novaPulse .8s ease-in-out infinite alternate; z-index: 40;
+  }
+  @keyframes novaPulse { from { transform: scale(1); } to { transform: scale(1.15); } }
+
+  .floating {
+    position: fixed; font-weight: 700; color: #ffe08a; pointer-events: none;
+    animation: rise .9s ease-out forwards; font-size: 18px; z-index: 60; text-shadow: 0 2px 6px #000;
+  }
+  @keyframes rise { to { transform: translateY(-70px); opacity: 0; } }
+
+  #toasts { position: fixed; right: 14px; bottom: 14px; z-index: 80; display: flex; flex-direction: column; gap: 8px; }
+  .toast {
+    background: #101731; border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 10px 14px;
+    font-size: 13px; box-shadow: 0 8px 20px rgba(0,0,0,.5); animation: slidein .25s; max-width: 300px;
+  }
+  .toast.gold { border-color: #ffd25e; background: #2f2a13; }
+  .toast.ach { border-color: #7ed3ff; background: #102033; }
+  @keyframes slidein { from { transform: translateX(30px); opacity: 0; } }
+
+  .modal-bg {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.65); display: none;
+    align-items: center; justify-content: center; z-index: 100;
+  }
+  .modal-bg.show { display: flex; }
+  .modal {
+    background: #131a33; border: 1px solid #8ec5ff55; border-radius: 14px;
+    padding: 24px; max-width: 420px; text-align: center;
+  }
+  .modal h3 { color: #8ec5ff; margin-bottom: 10px; }
+  .modal p { line-height: 1.6; margin-bottom: 16px; }
+
+  .progress { height: 12px; background: #1b2240; border-radius: 8px; overflow: hidden; margin: 10px 0; }
+  .progress>div { height: 100%; background: linear-gradient(90deg,#ff9df5,#a94df0); border-radius: 8px; transition: width .2s; }
+
+  @media (max-width: 640px) {
+    .star-btn { width: 170px; height: 170px; font-size: 68px; }
+    .daily-grid { grid-template-columns: repeat(4, 1fr); }
+  }
+</style>
+</head>
+<body>
+
+<div id="novaHost"></div>
+<div id="toasts"></div>
+
+<header>
+  <div class="brand">🪐 Star Empire</div>
+  <div class="hud">
+    <div class="cookies"><span id="hudStars">0</span> ⭐ stardust</div>
+    <div class="sub">per click: <span id="hudPpC">1</span> ⭐ · per second: <span id="hudCps">0</span> ⭐
+      <span id="buffTag" class="buff-tag" style="display:none">⚡ 2x boost</span>
+    </div>
+  </div>
+  <nav id="nav">
+    <button data-tab="click" class="active">🌟 Click</button>
+    <button data-tab="upgrades">⬆️ Upgrades</button>
+    <button data-tab="rebirth">💫 Supernova</button>
+    <button data-tab="codes">🎟️ Codes</button>
+    <button data-tab="daily">📅 Daily</button>
+    <button data-tab="achieve">🏆 Achievements</button>
+  </nav>
+</header>
+
+<main>
+  <section id="tab-click" class="active">
+    <div class="click-area">
+      <button id="bigStar" class="star-btn">🌟</button>
+      <div class="click-stats">
+        Collect stardust from the star!&nbsp; You've charged <b id="runClicks">0</b> stars this life.
+      </div>
+      <div class="panel" style="text-align:center; font-size:13px; color:#77849f">
+        Tip: you can also press <b>SPACE</b> to click.
+        Occasionally a 🌟 <b>Supernova</b> appears - click it fast for a huge bonus!
+      </div>
+    </div>
+  </section>
+
+  <section id="tab-upgrades">
+    <div class="panel">
+      <h2>⬆️ Upgrades <span style="font-size:12px; color:#8a99bb">(24 total)</span></h2>
+      <div id="upgradeList"></div>
+    </div>
+  </section>
+
+  <section id="tab-rebirth">
+    <div class="panel rebirth-box">
+      <h2>💫 Supernova (Rebirth)</h2>
+      <p class="big">
+        You hold <span class="gain" id="shardCount">0</span> 💫 cosmic shards
+        (each gives <b>+25%</b> click power and <b>+25%</b> stardust per second).
+      </p>
+      <div class="progress"><div id="rebirthBar" style="width:0%"></div></div>
+      <p class="big" id="rebirthInfo">Go supernova once you've earned at least 1,000,000 stardust.</p>
+      <button id="btnRebirth" disabled>Supernova</button>
+      <p class="hint" style="margin-top:12px">Going supernova resets stardust, clicks and upgrades, but keeps cosmic shards, achievements, codes and daily rewards. The more stardust you've ever earned, the more shards you gain!</p>
+    </div>
+  </section>
+
+  <section id="tab-codes">
+    <div class="panel">
+      <h2>🎟️ Redeem Code</h2>
+      <div style="display:flex; gap:10px; flex-wrap:wrap">
+        <input type="text" id="codeInput" placeholder="Enter code..." autocomplete="off">
+        <button class="btn" id="btnCode">Redeem</button>
+      </div>
+      <p class="hint" style="margin-top:12px">Codes are hidden across the galaxy. Each code works only once and never expires.</p>
+    </div>
+  </section>
+
+  <section id="tab-daily">
+    <div class="panel">
+      <h2>📅 Daily Rewards</h2>
+      <p class="hint" id="dailyHint">Sign in every day for bigger rewards!</p>
+      <div class="daily-grid" id="dailyGrid"></div>
+      <button id="btnDaily">Claim</button>
+    </div>
+  </section>
+
+  <section id="tab-achieve">
+    <div class="panel">
+      <h2>🏆 Achievements</h2>
+      <div id="achList"></div>
+    </div>
+    <div class="panel">
+      <h2>📊 Stats</h2>
+      <div id="statList"></div>
+    </div>
+    <div class="panel">
+      <h2>⚙️ Settings</h2>
+      <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center">
+        <label style="font-size:14px"><input type="checkbox" id="chkSound"> Sound effects</label>
+        <button class="btn gray" id="btnExport">Export save</button>
+        <button class="btn gray" id="btnImport">Import save</button>
+        <button class="btn red" id="btnReset">Hard reset</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div class="modal-bg" id="offlineModal">
+  <div class="modal">
+    <h3>👋 Welcome back!</h3>
+    <p id="offlineText"></p>
+    <button class="btn" id="btnOffline">Collect</button>
+  </div>
+</div>
+
+<script>
+"use strict";
+
+var SAVE_KEY = "starEmpireSave";
+
+function defaultSave() {
+  return {
+    stars: 0,
+    totalStars: 0,
+    totalClicks: 0,
+    clicks: 0,
+    ppcBase: 1,
+    up: {},
+    shards: 0,
+    rebirths: 0,
+    novas: 0,
+    codes: [],
+    daily: { day: 0, last: null, claimedCount: 0 },
+    achievements: [],
+    speedUsed: false,
+    lastSaved: Date.now(),
+    timePlayed: 0
+  };
+}
+
+function load() {
+  try {
+    var raw = localStorage.getItem(SAVE_KEY);
+    if (!raw) return null;
+    var d = JSON.parse(raw);
+    var base = defaultSave();
+    for (var k in base) { if (d[k] === undefined) d[k] = base[k]; }
+    d.up = Object.assign({}, base.up, d.up || {});
+    d.daily = Object.assign({}, base.daily, d.daily || {});
+    d.codes = d.codes || [];
+    d.achievements = d.achievements || [];
+    if (typeof d.timePlayed !== "number") d.timePlayed = 0;
+    return d;
+  } catch (e) { return null; }
+}
+function saveNow() {
+  save.lastSaved = Date.now();
+  localStorage.setItem(SAVE_KEY, JSON.stringify(save));
+}
+
+var saved = load();
+var offlineGain = 0;
+if (saved) {
+  var elapsed = (Date.now() - saved.lastSaved) / 1000;
+  if (elapsed > 60) {
+    var capped = Math.min(elapsed, 28800); // max 8 hours
+    offlineGain = cpsOf(saved) * capped * 0.5;
+  }
+}
+var save = saved || defaultSave();
+save.lastSaved = Date.now();
+
+/* ---------- numbers ---------- */
+function fmt(n) {
+  if (n < 0) return "-" + fmt(-n);
+  if (n < 1000) return Math.floor(n).toString();
+  var units = ["K", "M", "B", "T", "Qa", "Qi", "Sx", "Sp", "On"];
+  var u = -1, v = n;
+  while (v >= 1000 && u < units.length - 1) { v /= 1000; u++; }
+  var dec = v >= 100 ? 0 : v >= 10 ? 1 : 2;
+  return v.toFixed(dec) + units[u];
+}
+
+/* ---------- upgrades ---------- */
+var UPS = [
+  { key: "mouse", name: "Photon Mouse", desc: "+1 ⭐ per click", type: "click", val: 1, icon: "🖱️", baseCost: 10, growth: 1.12 },
+  { key: "fingers", name: "Stellar Touch", desc: "+2 ⭐ per click", type: "click", val: 2, icon: "👆", baseCost: 15, growth: 1.15 },
+  { key: "glove", name: "Gravity Gloves", desc: "+5 ⭐ per click", type: "click", val: 5, icon: "🧤", baseCost: 250, growth: 1.16 },
+  { key: "mech", name: "Mecha Hand", desc: "+12 ⭐ per click", type: "click", val: 12, icon: "🦾", baseCost: 1200, growth: 1.17 },
+  { key: "hammer", name: "Neutron Hammer", desc: "+30 ⭐ per click", type: "click", val: 30, icon: "🔨", baseCost: 6000, growth: 1.18 },
+  { key: "fist", name: "Plasma Fist", desc: "+60 ⭐ per click", type: "click", val: 60, icon: "👊", baseCost: 25000, growth: 1.19 },
+  { key: "lens", name: "Star Lens", desc: "+5% click power (multiplicative)", type: "clickPct", val: 5, icon: "🔭", baseCost: 500, growth: 1.35 },
+  { key: "quantum", name: "Quantum Pointer", desc: "+6% click power (multiplicative)", type: "clickPct", val: 6, icon: "🌀", baseCost: 3000, growth: 1.4 },
+  { key: "matrix", name: "Boost Matrix", desc: "+10% click power (multiplicative)", type: "clickPct", val: 10, icon: "📊", baseCost: 20000, growth: 1.4 },
+  { key: "storm", name: "Click Storm", desc: "+15% click power (multiplicative)", type: "clickPct", val: 15, icon: "🌩️", baseCost: 120000, growth: 1.4 },
+  { key: "solar", name: "Solar Panel", desc: "+1 ⭐ per second", type: "cps", val: 1, icon: "🌞", baseCost: 20, growth: 1.14 },
+  { key: "fuel", name: "Fuel Collector", desc: "+4 ⭐ per second", type: "cps", val: 4, icon: "🛢️", baseCost: 150, growth: 1.13 },
+  { key: "factory", name: "Orbital Factory", desc: "+10 ⭐ per second", type: "cps", val: 10, icon: "🏭", baseCost: 800, growth: 1.15 },
+  { key: "drones", name: "Drone Swarm", desc: "+30 ⭐ per second", type: "cps", val: 30, icon: "🛸", baseCost: 5000, growth: 1.16 },
+  { key: "reactor", name: "Fusion Reactor", desc: "+90 ⭐ per second", type: "cps", val: 90, icon: "⚛️", baseCost: 30000, growth: 1.17 },
+  { key: "dyson", name: "Dyson Sphere", desc: "+250 ⭐ per second", type: "cps", val: 250, icon: "🌐", baseCost: 200000, growth: 1.18 },
+  { key: "warp", name: "Warp Engine", desc: "+700 ⭐ per second", type: "cps", val: 700, icon: "🚀", baseCost: 1e6, growth: 1.2 },
+  { key: "array", name: "Ascension Array", desc: "+2,000 ⭐ per second", type: "cps", val: 2000, icon: "🛰️", baseCost: 8e6, growth: 1.2 },
+  { key: "grid", name: "Energy Grid", desc: "+5% stardust per second (multiplicative)", type: "cpsPct", val: 5, icon: "⚡", baseCost: 1000, growth: 1.35 },
+  { key: "coil", name: "Resonance Coil", desc: "+10% stardust per second (multiplicative)", type: "cpsPct", val: 10, icon: "🧲", baseCost: 10000, growth: 1.4 },
+  { key: "graviton", name: "Graviton Field", desc: "+15% stardust per second (multiplicative)", type: "cpsPct", val: 15, icon: "🌫️", baseCost: 120000, growth: 1.4 },
+  { key: "magnet", name: "Star Magnet", desc: "+10% Supernova bonus (multiplicative)", type: "novaPct", val: 10, icon: "🪝", baseCost: 2000, growth: 1.5 },
+  { key: "chart", name: "Nebula Chart", desc: "+25% Supernova bonus (multiplicative)", type: "novaPct", val: 25, icon: "🗺️", baseCost: 20000, growth: 1.5 },
+  { key: "hole", name: "Black Hole Grasp", desc: "+500 ⭐ per click", type: "click", val: 500, icon: "🕳️", baseCost: 5e6, growth: 1.25 }
+];
+
+function upCost(key) {
+  var u = UPS.filter(function (x) { return x.key === key; })[0];
+  return Math.floor(u.baseCost * Math.pow(u.growth, (save.up[key] || 0)));
+}
+function buyUpgrade(key) {
+  var u = UPS.filter(function (x) { return x.key === key; })[0];
+  var c = upCost(key);
+  if (save.stars < c) return;
+  save.stars -= c;
+  save.up[key] = (save.up[key] || 0) + 1;
+  toast(u.name + " purchased!", "+" + u.name, "gold");
+}
+function buyMax(key) {
+  var n = 0;
+  while (save.stars >= upCost(key)) {
+    save.stars -= upCost(key);
+    save.up[key] = (save.up[key] || 0) + 1;
+    n++;
+  }
+  if (n > 0) {
+    var u = UPS.filter(function (x) { return x.key === key; })[0];
+    toast("Bought " + n + "x " + u.name + "!", "Maxed out " + u.name, "gold");
+  }
+}
+function sumType(type) {
+  var n = 0;
+  UPS.forEach(function (u) { if (u.type === type) n += (save.up[u.key] || 0) * u.val; });
+  return n;
+}
+function pctMult(type) {
+  var m = 1;
+  UPS.forEach(function (u) { if (u.type === type) m *= Math.pow(1 + u.val / 100, save.up[u.key] || 0); });
+  return m;
+}
+
+/* ---------- production ---------- */
+function ppc() {
+  return (save.ppcBase + sumType("click"))
+    * pctMult("clickPct")
+    * (1 + save.shards * 0.25)
+    * (Date.now() < save.speedUntil ? 2 : 1);
+}
+function cpsOf(s) {
+  return sumType("cps")
+    * pctMult("cpsPct")
+    * (1 + s.shards * 0.25)
+    * (Date.now() < s.speedUntil ? 2 : 1);
+}
+function cps() { return cpsOf(save); }
+
+function addStars(n) {
+  save.stars += n;
+  save.totalStars += n;
+}
+
+/* ---------- rebirth ---------- */
+function shardPreview() {
+  return Math.floor(Math.pow(save.totalStars / 1e6, 0.5));
+}
+function shardGain() {
+  return shardPreview() - save.shards;
+}
+function canRebirth() {
+  return save.totalStars >= 1e6 && shardGain() > 0;
+}
+function doRebirth() {
+  if (!canRebirth()) return;
+  save.shards = shardPreview();
+  save.rebirths++;
+  save.stars = 0;
+  save.clicks = 0;
+  save.ppcBase = 1;
+  save.up = {};
+  save.speedUntil = 0;
+  toast("💫 Supernova! Now at " + save.shards + " cosmic shards!", null, "ach");
+  checkAchievements();
+}
+function renderRebirth() {
+  document.getElementById("shardCount").textContent = fmt(save.shards);
+  var gain = shardGain();
+  var pct = Math.min(100, Math.max(0, (Math.pow(save.totalStars, 0.5) / Math.pow(1e6, 0.5)) * 100));
+  document.getElementById("rebirthBar").style.width = pct + "%";
+  var info = document.getElementById("rebirthInfo");
+  if (save.totalStars < 1e6) {
+    info.innerHTML = "Supernova unlocked at <b>1,000,000</b> total stardust earned. You're at <b>" + fmt(save.totalStars) + "</b>.";
+  } else if (gain > 0) {
+    info.innerHTML = "Going supernova now earns you <b>" + gain + "</b> more 💫 shard" + (gain > 1 ? "s" : "") + "!";
+  } else {
+    info.innerHTML = "Earn more stardust to gain more shards. (Shards needed: " + fmt(Math.pow((save.shards + 1) * 1e6, 2) - save.totalStars) + ")";
+  }
+  document.getElementById("btnRebirth").disabled = !canRebirth();
+  document.getElementById("btnRebirth").textContent = canRebirth()
+    ? "💫 Supernova for +" + gain + " shard" + (gain > 1 ? "s" : "")
+    : "Supernova";
+}
+
+/* ---------- supernova event ---------- */
+function novaBonus() {
+  return ppc() * 25 * pctMult("novaPct");
+}
+function spawnNova() {
+  var host = document.getElementById("novaHost");
+  if (host.children.length > 8) { scheduleNova(); return; }
+  var el = document.createElement("div");
+  el.className = "nova";
+  el.textContent = "🌟";
+  var w = Math.max(80, window.innerWidth - 80);
+  var h = Math.max(80, window.innerHeight - 80);
+  el.style.left = (40 + Math.random() * (w - 160)) + "px";
+  el.style.top = (90 + Math.random() * (h - 190)) + "px";
+  el.onclick = function (ev) {
+    ev.stopPropagation();
+    var reward = Math.floor(novaBonus());
+    addStars(reward);
+    save.novas++;
+    save.totalClicks++;
+    floating("+🌟 " + fmt(reward), ev.clientX, ev.clientY);
+    toast("🌟 Supernova! +" + fmt(reward) + " stardust", null, "gold");
+    el.remove();
+    scheduleNova();
+  };
+  host.appendChild(el);
+  setTimeout(function () { el.remove(); scheduleNova(); }, 15000);
+}
+function scheduleNova() {
+  setTimeout(spawnNova, 40000 + Math.random() * 50000);
+}
+function spawnMany(n) {
+  for (var i = 0; i < n; i++) setTimeout(spawnNova, i * 400);
+}
+
+/* ---------- daily ---------- */
+var DAILY = [100, 250, 500, 1000, 2500, 5000, 10000];
+function startOfToday() { var d = new Date(); d.setHours(0, 0, 0, 0); return d; }
+function dateStr(d) {
+  return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+}
+function dailyState() {
+  var today = startOfToday();
+  if (!save.daily.last) return { can: true, day: 0 };
+  var last = new Date(save.daily.last + "T00:00:00");
+  var diff = Math.round((today - last) / 86400000);
+  if (diff <= 0) return { can: false, day: save.daily.day % 7 };
+  var day = diff === 1 ? (save.daily.day + 1) % 7 : 0;
+  return { can: true, day: day };
+}
+function claimDaily() {
+  var st = dailyState();
+  if (!st.can) return;
+  var reward = DAILY[st.day];
+  addStars(reward);
+  var extra = st.day === 6 ? 3 : 0;
+  if (extra) save.shards += extra;
+  save.daily.day = st.day;
+  save.daily.last = dateStr(startOfToday());
+  save.daily.claimedCount++;
+  toast("📅 +" + fmt(reward) + " stardust" + (extra ? " and +" + extra + " 💫 shards" : ""), "Daily reward claimed!", "gold");
+  checkAchievements();
+}
+function renderDaily() {
+  var st = dailyState();
+  var grid = document.getElementById("dailyGrid");
+  if (!grid.dataset.built) {
+    grid.dataset.built = 1;
+    grid.innerHTML = "";
+    for (var i = 0; i < 7; i++) {
+      var d = document.createElement("div");
+      d.className = "day";
+      d.id = "day-" + i;
+      d.innerHTML = '<div class="d">Day ' + (i + 1) + '</div><div class="v">' + fmt(DAILY[i]) + '</div><div class="s">' + (i === 6 ? "+3 💫" : "⭐") + '</div>';
+      grid.appendChild(d);
+    }
+  }
+  for (var i = 0; i < 7; i++) {
+    var el = document.getElementById("day-" + i);
+    el.classList.toggle("today", st.can && st.day === i);
+    el.classList.toggle("done", save.daily.last && (st.can ? i < st.day : i <= save.daily.day % 7));
+  }
+  var btn = document.getElementById("btnDaily");
+  btn.disabled = !st.can;
+  btn.textContent = st.can ? "Claim Day " + (st.day + 1) + " reward" : "Come back tomorrow!";
+  document.getElementById("dailyHint").textContent = st.can
+    ? "Your reward today is ready! (Streak day " + (st.day + 1) + ")"
+    : "Already claimed today. Come back tomorrow to continue your streak!";
+}
+
+/* ---------- codes ---------- */
+var CODES = {
+  "7K9X-QA2C-S1P": { type: "stars", value: 5000, msg: "+5,000 ⭐ stardust" },
+  "H4TR-Y8QB-KM3": { type: "stars", value: 25000, msg: "+25,000 ⭐ stardust" },
+  "W2NV-9PL7-D8J": { type: "ppc", value: 50, msg: "+50 base click power" },
+  "N5QX-3RC9-A6B": { type: "nova", value: 5, msg: "5 Supernova events have appeared!" },
+  "X9DJ-6K2W-M4S": { type: "speed", seconds: 120, msg: "2x production for 2 minutes!" },
+  "A3B8-Q7FV-2DC": { type: "shards", value: 5, msg: "+5 cosmic shards 💫" }
+};
+function redeemCode(code) {
+  code = code.trim().toUpperCase();
+  if (!code) return;
+  if (save.codes.indexOf(code) !== -1) { toast("Already used that code!", "⚠️", null); return; }
+  var c = CODES[code];
+  if (!c) { toast("Invalid code.", "❌", null); return; }
+  save.codes.push(code);
+  if (c.type === "stars") addStars(c.value);
+  else if (c.type === "ppc") save.ppcBase += c.value;
+  else if (c.type === "nova") spawnMany(c.value);
+  else if (c.type === "speed") { save.speedUntil = Date.now() + c.seconds * 1000; save.speedUsed = true; }
+  else if (c.type === "shards") save.shards += c.value;
+  toast(c.msg, "Code redeemed: " + code, "gold");
+  document.getElementById("codeInput").value = "";
+  checkAchievements();
+}
+
+/* ---------- achievements ---------- */
+function totalOwned() {
+  var n = 0;
+  UPS.forEach(function (u) { n += save.up[u.key] || 0; });
+  return n;
+}
+var ACH = [
+  { id: "first", icon: "🌟", name: "First Light", desc: "Click the star once", check: function (s) { return s.totalClicks >= 1; } },
+  { id: "c100", icon: "✨", name: "Spark", desc: "100 total clicks", check: function (s) { return s.totalClicks >= 100; } },
+  { id: "c1k", icon: "🔭", name: "Constellation", desc: "1,000 total clicks", check: function (s) { return s.totalClicks >= 1000; } },
+  { id: "c25k", icon: "⚡", name: "Pulsar", desc: "25,000 total clicks", check: function (s) { return s.totalClicks >= 25000; } },
+  { id: "c100k", icon: "🚀", name: "Quasar", desc: "100,000 total clicks", check: function (s) { return s.totalClicks >= 100000; } },
+  { id: "up1", icon: "🛠️", name: "Recruiter", desc: "Buy any upgrade", check: function (s) { return totalOwned() > 0; } },
+  { id: "up20", icon: "🏠", name: "Full Crew", desc: "Own 20 upgrades in one life", check: function (s) { return totalOwned() >= 20; } },
+  { id: "m1", icon: "💰", name: "Stardust Millionaire", desc: "Earn 1M stardust lifetime", check: function (s) { return s.totalStars >= 1e6; } },
+  { id: "b1", icon: "🏦", name: "Stardust Billionaire", desc: "Earn 1B stardust lifetime", check: function (s) { return s.totalStars >= 1e9; } },
+  { id: "reb1", icon: "💫", name: "Big Bang", desc: "Go supernova for the first time", check: function (s) { return s.rebirths >= 1; } },
+  { id: "reb5", icon: "🔥", name: "Galaxy Hopper", desc: "Go supernova 5 times", check: function (s) { return s.rebirths >= 5; } },
+  { id: "reb20", icon: "👑", name: "Cosmic Overlord", desc: "Go supernova 20 times", check: function (s) { return s.rebirths >= 20; } },
+  { id: "code1", icon: "🎟️", name: "Broadcaster", desc: "Redeem your first code", check: function (s) { return s.codes.length >= 1; } },
+  { id: "daily7", icon: "📅", name: "Planet Regular", desc: "Claim 7 daily rewards", check: function (s) { return s.daily.claimedCount >= 7; } },
+  { id: "nova5", icon: "🌟", name: "Star Collector", desc: "Click 5 Supernova events", check: function (s) { return s.novas >= 5; } },
+  { id: "speed", icon: "⚡", name: "Warp Speed", desc: "Use a speed boost", check: function (s) { return s.speedUsed; } }
+];
+function renderAchievements() {
+  var host = document.getElementById("achList");
+  if (!host.dataset.built) {
+    host.dataset.built = 1;
+    host.innerHTML = "";
+    ACH.forEach(function (a) {
+      var div = document.createElement("div");
+      div.className = "ach";
+      div.id = "ach-" + a.id;
+      div.innerHTML = '<div class="icon">' + a.icon + '</div><div><div class="name">' + a.name + '</div><div class="desc">' + a.desc + '</div></div>';
+      host.appendChild(div);
+    });
+  }
+  ACH.forEach(function (a) {
+    document.getElementById("ach-" + a.id).classList.toggle("done", save.achievements.indexOf(a.id) !== -1);
+  });
+}
+function checkAchievements() {
+  ACH.forEach(function (a) {
+    if (save.achievements.indexOf(a.id) === -1 && a.check(save)) {
+      save.achievements.push(a.id);
+      var el = document.getElementById("ach-" + a.id);
+      if (el) el.classList.add("done");
+      toast("🏆 " + a.name, a.desc, "ach");
+    }
+  });
+}
+
+/* ---------- stats ---------- */
+function renderStats() {
+  var host = document.getElementById("statList");
+  var rows = [
+    ["Total clicks", fmt(save.totalClicks)],
+    ["Total stardust earned", fmt(save.totalStars)],
+    ["Supernovas", fmt(save.rebirths)],
+    ["Cosmic shards", fmt(save.shards)],
+    ["Supernova events clicked", fmt(save.novas)],
+    ["Codes redeemed", fmt(save.codes.length)],
+    ["Daily rewards claimed", fmt(save.daily.claimedCount)],
+    ["Achievements", save.achievements.length + " / " + ACH.length],
+    ["Time played", fmtTime(save.timePlayed)]
+  ];
+  host.innerHTML = "";
+  rows.forEach(function (r) {
+    var div = document.createElement("div");
+    div.className = "row";
+    div.innerHTML = "<span>" + r[0] + "</span><span>" + r[1] + "</span>";
+    host.appendChild(div);
+  });
+}
+function fmtTime(s) {
+  var sec = Math.floor(s);
+  var h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), ss = sec % 60;
+  return h + "h " + m + "m " + ss + "s";
+}
+
+/* ---------- ui helpers ---------- */
+function toast(text, sub, kind) {
+  var host = document.getElementById("toasts");
+  var div = document.createElement("div");
+  div.className = "toast" + (kind ? " " + kind : "");
+  div.innerHTML = (sub ? "<b>" + sub + "</b><br>" : "") + text;
+  host.appendChild(div);
+  setTimeout(function () { div.remove(); }, 4000);
+  while (host.children.length > 5) host.firstChild.remove();
+}
+function floating(text, x, y) {
+  var el = document.createElement("div");
+  el.className = "floating";
+  el.textContent = text;
+  el.style.left = (x + (Math.random() * 30 - 15)) + "px";
+  el.style.top = (y - 20) + "px";
+  document.body.appendChild(el);
+  setTimeout(function () { el.remove(); }, 950);
+}
+
+/* ---------- sound ---------- */
+var audioOK = false, audioCtx = null;
+function initAudio() {
+  if (audioCtx) return;
+  try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); audioOK = true; } catch (e) { audioOK = false; }
+}
+function blip() {
+  if (!audioOK || !document.getElementById("chkSound").checked) return;
+  var o = audioCtx.createOscillator();
+  var g = audioCtx.createGain();
+  o.type = "triangle";
+  o.frequency.value = 760;
+  g.gain.setValueAtTime(0.12, audioCtx.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.12);
+  o.connect(g); g.connect(audioCtx.destination);
+  o.start(); o.stop(audioCtx.currentTime + 0.12);
+}
+
+/* ---------- upgrades render ---------- */
+var upgradeBuilt = false;
+function renderUpgrades() {
+  var host = document.getElementById("upgradeList");
+  if (!upgradeBuilt) {
+    upgradeBuilt = true;
+    host.innerHTML = "";
+    UPS.forEach(function (u) {
+      var div = document.createElement("div");
+      div.className = "upgrade";
+      div.innerHTML =
+        '<div class="icon">' + u.icon + '</div>' +
+        '<div class="info"><div class="name">' + u.name + '</div>' +
+        '<div class="desc">' + u.desc + '</div>' +
+        '<div class="owned" id="own-' + u.key + '">Owned: 0</div></div>' +
+        '<div class="controls"><button class="buy" id="buy-' + u.key + '"></button>' +
+        '<button class="max" id="max-' + u.key + '">MAX</button></div>';
+      host.appendChild(div);
+    });
+    host.addEventListener("click", function (e) {
+      var el = e.target;
+      if (el.id && el.id.indexOf("buy-") === 0) buyUpgrade(el.id.slice(4));
+      else if (el.id && el.id.indexOf("max-") === 0) buyMax(el.id.slice(4));
+    });
+  }
+  UPS.forEach(function (u) {
+    document.getElementById("own-" + u.key).textContent = "Owned: " + (save.up[u.key] || 0);
+    var btn = document.getElementById("buy-" + u.key);
+    btn.textContent = "Buy - " + fmt(upCost(u.key)) + " ⭐";
+    btn.disabled = save.stars < upCost(u.key);
+    var maxBtn = document.getElementById("max-" + u.key);
+    maxBtn.disabled = save.stars < upCost(u.key);
+  });
+}
+
+/* ---------- main loop ---------- */
+var lastTick = performance.now();
+function clickStar(e) {
+  e.preventDefault();
+  addStars(ppc());
+  save.totalClicks++;
+  save.clicks++;
+  blip();
+  var rect = document.getElementById("bigStar").getBoundingClientRect();
+  floating("+⭐ " + fmt(ppc()), rect.left + rect.width / 2, rect.top + 20);
+  var c = document.getElementById("bigStar");
+  c.style.transition = "transform .1s";
+  c.style.transform = "scale(.92)";
+  setTimeout(function () { c.style.transform = ""; }, 100);
+  checkAchievements();
+}
+
+function render() {
+  document.getElementById("hudStars").textContent = fmt(save.stars);
+  document.getElementById("hudPpC").textContent = fmt(ppc());
+  document.getElementById("hudCps").textContent = fmt(cps());
+  document.getElementById("runClicks").textContent = fmt(save.clicks);
+  var buff = save.speedUntil > Date.now();
+  var bt = document.getElementById("buffTag");
+  bt.style.display = buff ? "inline-block" : "none";
+  if (buff) bt.textContent = "⚡ 2x boost " + Math.ceil((save.speedUntil - Date.now()) / 1000) + "s";
+  renderUpgrades();
+  renderRebirth();
+  renderDaily();
+  renderAchievements();
+  renderStats();
+}
+
+setInterval(function () {
+  var now = performance.now();
+  var dt = (now - lastTick) / 1000;
+  lastTick = now;
+  save.timePlayed += dt;
+  addStars(cps() * dt);
+  render();
+}, 100);
+
+setInterval(saveNow, 5000);
+window.addEventListener("beforeunload", saveNow);
+document.addEventListener("visibilitychange", function () { if (document.hidden) saveNow(); });
+
+/* ---------- events ---------- */
+document.getElementById("bigStar").addEventListener("click", clickStar);
+document.getElementById("btnCode").addEventListener("click", function () { redeemCode(document.getElementById("codeInput").value); });
+document.getElementById("codeInput").addEventListener("keydown", function (e) { if (e.key === "Enter") redeemCode(this.value); });
+document.getElementById("btnRebirth").addEventListener("click", doRebirth);
+document.getElementById("btnDaily").addEventListener("click", claimDaily);
+document.addEventListener("keydown", function (e) {
+  if (e.code === "Space" && document.getElementById("tab-click").classList.contains("active")) {
+    e.preventDefault();
+    clickStar({ preventDefault: function () {}, clientX: window.innerWidth / 2, clientY: window.innerHeight / 2 });
+  }
+});
+
+document.getElementById("nav").addEventListener("click", function (e) {
+  var btn = e.target.closest("button");
+  if (!btn) return;
+  document.querySelectorAll("nav button").forEach(function (b) { b.classList.remove("active"); });
+  btn.classList.add("active");
+  document.querySelectorAll("main section").forEach(function (s) { s.classList.remove("active"); });
+  document.getElementById("tab-" + btn.dataset.tab).classList.add("active");
+});
+
+document.getElementById("btnExport").addEventListener("click", function () {
+  saveNow();
+  var json = localStorage.getItem(SAVE_KEY);
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(json).then(function () { toast("Save copied to clipboard!", "✅"); });
+  } else {
+    prompt("Copy this save:", json);
+  }
+});
+document.getElementById("btnImport").addEventListener("click", function () {
+  var raw = prompt("Paste your save JSON:");
+  if (!raw) return;
+  try {
+    var d = JSON.parse(raw);
+    var base = defaultSave();
+    for (var k in base) { if (d[k] === undefined) d[k] = base[k]; }
+    d.up = Object.assign({}, base.up, d.up || {});
+    d.daily = Object.assign({}, base.daily, d.daily || {});
+    d.codes = d.codes || [];
+    d.achievements = d.achievements || [];
+    save = d;
+    saveNow();
+    toast("Save imported!", "✅");
+  } catch (e) { toast("Import failed - invalid save.", "❌"); }
+});
+document.getElementById("btnReset").addEventListener("click", function () {
+  if (prompt("Hard reset? Type RESET to confirm") === "RESET") {
+    localStorage.removeItem(SAVE_KEY);
+    location.reload();
+  }
+});
+
+/* ---------- init ---------- */
+render();
+scheduleNova();
+checkAchievements();
+
+document.getElementById("btnOffline").addEventListener("click", function () {
+  if (offlineGain > 0) {
+    addStars(offlineGain);
+    toast("Collected +" + fmt(offlineGain) + " stardust while you were away!", "📥", "gold");
+  }
+  document.getElementById("offlineModal").classList.remove("show");
+});
+if (offlineGain > 0) {
+  document.getElementById("offlineText").innerHTML =
+    "While you were away you earned <b>" + fmt(offlineGain) + " ⭐</b> (50% of your " + fmt(cps()) + " cps).";
+  document.getElementById("offlineModal").classList.add("show");
+}
+
+document.getElementById("bigStar").addEventListener("mousedown", function () { initAudio(); });
+
+window.game = { save: function () { return save; }, addCode: function (c) { redeemCode(c); } };
+</script>
+</body>
+</html>
