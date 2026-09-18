@@ -198,6 +198,7 @@
     <button data-tab="codes">🎟️ Codes</button>
     <button data-tab="daily">📅 Daily</button>
     <button data-tab="achieve">🏆 Achievements</button>
+    <button id="navAdmin" data-tab="admin" style="display:none">🛠️ Admin</button>
   </nav>
 </header>
 
@@ -275,6 +276,29 @@
       </div>
     </div>
   </section>
+
+  <section id="tab-admin">
+    <div class="panel">
+      <h2>🛠️ Owner Commands</h2>
+      <p class="hint">Welcome back, boss. These tools are for your eyes only.</p>
+      <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center">
+        <input type="text" id="ownerStars" placeholder="Stars amount" autocomplete="off" style="width:130px">
+        <button class="btn" id="btnOwnerStars">+ Stars</button>
+        <input type="text" id="ownerShards" placeholder="Shards amount" autocomplete="off" style="width:130px">
+        <button class="btn" id="btnOwnerShards">+ Shards</button>
+      </div>
+      <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:12px">
+        <button class="btn gray" id="btnOwnerBig">+100M ⭐</button>
+        <button class="btn gray" id="btnOwnerShards10">+50 💫</button>
+        <button class="btn gray" id="btnOwnerMaxUp">Max all upgrades</button>
+        <button class="btn gray" id="btnOwnerAch">Unlock all achievements</button>
+        <button class="btn gray" id="btnOwnerBoost">2x boost (10 min)</button>
+        <button class="btn red" id="btnOwnerReset">Wipe save</button>
+        <button class="btn gray" id="btnOwnerLock">Lock panel</button>
+      </div>
+      <p class="hint" style="margin-top:12px">Console: after unlocking, use <code>game.owner.addStars(9999)</code>, <code>game.owner.addShards(10)</code>, <code>game.owner.maxUpgrades()</code>, <code>game.owner.unlockAll()</code>, <code>game.owner.boost(600)</code>, <code>game.owner.reset()</code>.</p>
+    </div>
+  </section>
 </main>
 
 <div class="modal-bg" id="offlineModal">
@@ -289,6 +313,8 @@
 "use strict";
 
 var SAVE_KEY = "starEmpireSave";
+var OWNER_PASSWORD = "nebulaX-OwN3r-2026";
+var ownerMode = false;
 
 function defaultSave() {
   return {
@@ -577,8 +603,10 @@ var CODES = {
   "A3B8-Q7FV-2DC": { type: "shards", value: 5, msg: "+5 cosmic shards 💫" }
 };
 function redeemCode(code) {
-  code = code.trim().toUpperCase();
+  code = code.trim();
   if (!code) return;
+  if (code === OWNER_PASSWORD) { unlockOwner(code); return; }
+  code = code.toUpperCase();
   if (save.codes.indexOf(code) !== -1) { toast("Already used that code!", "⚠️", null); return; }
   var c = CODES[code];
   if (!c) { toast("Invalid code.", "❌", null); return; }
@@ -643,6 +671,57 @@ function checkAchievements() {
       toast("🏆 " + a.name, a.desc, "ach");
     }
   });
+}
+
+/* ---------- owner commands ---------- */
+function unlockOwner(pw) {
+  if (pw === OWNER_PASSWORD && !ownerMode) {
+    ownerMode = true;
+    document.getElementById("navAdmin").style.display = "";
+    if (window.game) window.game.owner = OWNER_FUNCS;
+    toast("🔐 Owner access granted.", null, "ach");
+  }
+}
+function lockOwner() {
+  ownerMode = false;
+  document.getElementById("navAdmin").style.display = "none";
+  if (window.game) delete window.game.owner;
+}
+var OWNER_FUNCS = {
+  addStars: function (n) { addStars(+n || 0); saveNow(); },
+  addShards: function (n) { save.shards += (+n || 0); saveNow(); },
+  maxUpgrades: function () {
+    UPS.forEach(function (u) { save.up[u.key] = 100; });
+    saveNow();
+    toast("All upgrades maxed!", "🛠️", "gold");
+  },
+  unlockAll: function () {
+    ACH.forEach(function (a) {
+      if (save.achievements.indexOf(a.id) === -1) save.achievements.push(a.id);
+    });
+    saveNow();
+    toast("All achievements unlocked!", "🏆", "ach");
+  },
+  boost: function (sec) {
+    save.speedUntil = Date.now() + (+sec || 600) * 1000;
+    save.speedUsed = true;
+    toast("Boost engaged!", "⚡", "gold");
+  },
+  reset: function () { localStorage.removeItem(SAVE_KEY); location.reload(); }
+};
+function ownerAddStars() {
+  var n = parseFloat(document.getElementById("ownerStars").value) || 0;
+  if (n <= 0) return;
+  addStars(n);
+  toast("+" + fmt(n) + " stardust", "🛠️", "gold");
+  document.getElementById("ownerStars").value = "";
+}
+function ownerAddShards() {
+  var n = parseFloat(document.getElementById("ownerShards").value) || 0;
+  if (n <= 0) return;
+  save.shards += n;
+  toast("+" + fmt(n) + " cosmic shards", "🛠️", "gold");
+  document.getElementById("ownerShards").value = "";
 }
 
 /* ---------- stats ---------- */
@@ -866,7 +945,17 @@ if (offlineGain > 0) {
 
 document.getElementById("bigStar").addEventListener("mousedown", function () { initAudio(); });
 
-window.game = { save: function () { return save; }, addCode: function (c) { redeemCode(c); } };
+document.getElementById("btnOwnerStars").addEventListener("click", ownerAddStars);
+document.getElementById("btnOwnerShards").addEventListener("click", ownerAddShards);
+document.getElementById("btnOwnerBig").addEventListener("click", function () { addStars(1e8); saveNow(); toast("+100M stardust", "🛠️", "gold"); });
+document.getElementById("btnOwnerShards10").addEventListener("click", function () { save.shards += 50; saveNow(); toast("+50 cosmic shards", "🛠️", "gold"); });
+document.getElementById("btnOwnerMaxUp").addEventListener("click", OWNER_FUNCS.maxUpgrades);
+document.getElementById("btnOwnerAch").addEventListener("click", OWNER_FUNCS.unlockAll);
+document.getElementById("btnOwnerBoost").addEventListener("click", function () { OWNER_FUNCS.boost(600); });
+document.getElementById("btnOwnerReset").addEventListener("click", OWNER_FUNCS.reset);
+document.getElementById("btnOwnerLock").addEventListener("click", lockOwner);
+
+window.game = { save: function () { return save; }, addCode: function (c) { redeemCode(c); }, __unlock: unlockOwner };
 </script>
 </body>
 </html>
