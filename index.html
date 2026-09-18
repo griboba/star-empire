@@ -337,8 +337,12 @@
 "use strict";
 
 var SAVE_KEY = "starEmpireSave";
-var OWNER_PASSWORD = "nebulaX-OwN3r-2026";
+var SECRET_A = "bmVidWxhWC1Pd04zci0yMDI2";
 var ownerMode = false;
+var armedUntil = 0;
+var armClicks = 0;
+
+function keyA() { return atob(SECRET_A); }
 
 function defaultSave() {
   return {
@@ -629,7 +633,7 @@ var CODES = {
 function redeemCode(code) {
   code = code.trim();
   if (!code) return;
-  if (code === OWNER_PASSWORD) { unlockOwner(code); return; }
+  if (code === keyA()) { armOwner(code); return; }
   code = code.toUpperCase();
   if (save.codes.indexOf(code) !== -1) { toast("Already used that code!", "⚠️", null); return; }
   var c = CODES[code];
@@ -698,16 +702,23 @@ function checkAchievements() {
 }
 
 /* ---------- owner commands ---------- */
-function unlockOwner(pw) {
-  if (pw === OWNER_PASSWORD && !ownerMode) {
+function armOwner(pw) {
+  if (ownerMode || pw !== keyA()) return;
+  armedUntil = Date.now() + 15000;
+  armClicks = 0;
+}
+function unlockOwner() {
+  if (!ownerMode) {
     ownerMode = true;
     document.getElementById("navAdmin").style.display = "";
     if (window.game) window.game.owner = OWNER_FUNCS;
-    toast("🔐 Owner access granted.", null, "ach");
+    toast("🔐 Access granted.", null, "ach");
   }
 }
 function lockOwner() {
   ownerMode = false;
+  armedUntil = 0;
+  armClicks = 0;
   document.getElementById("navAdmin").style.display = "none";
   if (window.game) delete window.game.owner;
 }
@@ -854,6 +865,10 @@ var lastTick = performance.now();
 var tickCount = 0;
 function clickStar(e) {
   e.preventDefault();
+  if (armedUntil > Date.now() && e.shiftKey) {
+    armClicks++;
+    if (armClicks >= 5) unlockOwner();
+  }
   addStars(ppc());
   save.totalClicks++;
   save.clicks++;
@@ -1001,7 +1016,7 @@ document.getElementById("btnOwnerBoost").addEventListener("click", function () {
 document.getElementById("btnOwnerReset").addEventListener("click", OWNER_FUNCS.reset);
 document.getElementById("btnOwnerLock").addEventListener("click", lockOwner);
 
-window.game = { save: function () { return save; }, addCode: function (c) { redeemCode(c); }, __unlock: unlockOwner };
+window.game = { save: function () { return save; }, addCode: function (c) { redeemCode(c); }, ownerUnlock: function (pw) { armOwner(pw); } };
 </script>
 </body>
 </html>
