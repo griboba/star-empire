@@ -222,7 +222,7 @@
     <button data-tab="codes">🎟️ Codes</button>
     <button data-tab="daily">📅 Daily</button>
     <button data-tab="achieve">🏆 Achievements</button>
-    <button id="navAdmin" data-tab="admin" style="display:none">🛠️ Admin</button>
+    <button id="navOwner" data-tab="admin" style="display:none">🛠️ Owner</button>
   </nav>
 </header>
 
@@ -710,7 +710,7 @@ function armOwner(pw) {
 function unlockOwner() {
   if (!ownerMode) {
     ownerMode = true;
-    document.getElementById("navAdmin").style.display = "";
+    document.getElementById("navOwner").style.display = "";
     if (window.game) window.game.owner = OWNER_FUNCS;
     toast("🔐 Access granted.", null, "ach");
   }
@@ -719,7 +719,7 @@ function lockOwner() {
   ownerMode = false;
   armedUntil = 0;
   armClicks = 0;
-  document.getElementById("navAdmin").style.display = "none";
+  document.getElementById("navOwner").style.display = "none";
   if (window.game) delete window.game.owner;
 }
 var OWNER_FUNCS = {
